@@ -205,6 +205,7 @@ Sandbox 不只是“能不能运行命令”，而是执行权限模型：
 2. `ApplyPatchTool`：补丁式修改文件，天然便于 diff 审批。
 3. `FileTool`：读写文件、列目录、搜索文本。
 4. `ProcessTool`：长进程、PTY、stdin/stdout 流。
+5. `WebSearchTool` / `WebFetchTool`：搜索和抓取网页，默认应被 sandbox / permission policy 视为网络能力。
 
 ### 4.3 Approval
 

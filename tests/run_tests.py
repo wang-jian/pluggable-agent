@@ -22,6 +22,12 @@ from test_openviking_memory import (  # noqa: E402
     test_openviking_import_error_is_clear,
     test_openviking_remember_commits_by_default,
 )
+from test_web_tools import (  # noqa: E402
+    test_web_fetch_tool_calls_client,
+    test_web_search_tool_calls_client_and_formats_results,
+    test_web_tool_provider_returns_search_and_fetch,
+    test_web_tools_report_network_errors,
+)
 
 
 def main() -> None:
@@ -39,6 +45,10 @@ def main() -> None:
         test_openviking_finish_turn_writes_assistant_message,
         test_openviking_remember_commits_by_default,
         test_openviking_import_error_is_clear,
+        test_web_search_tool_calls_client_and_formats_results,
+        test_web_fetch_tool_calls_client,
+        test_web_tools_report_network_errors,
+        test_web_tool_provider_returns_search_and_fetch,
     ]
     for test in tests:
         test()
