@@ -31,6 +31,7 @@ class AgentLoop:
         self._stop_on_tool_error = stop_on_tool_error
 
     def run(self, agent: Agent, user_input: str) -> LoopResult:
+        self._runtime.memory.start_turn(user_input)
         messages = self._runtime.build_messages(agent, user_input)
         registry = ToolRegistry(self._runtime.build_tools(agent, user_input))
         dispatcher = ToolDispatcher(registry, self.events)
@@ -51,8 +52,8 @@ class AgentLoop:
             )
 
             if output.final:
-                self.events.emit("turn.completed", reason=FinishReason.FINAL.value)
-                return LoopResult(
+                return self._finish(
+                    user_input,
                     answer=output.content,
                     finish_reason=FinishReason.FINAL,
                     messages=messages,
@@ -60,8 +61,8 @@ class AgentLoop:
                 )
 
             if not output.tool_calls:
-                self.events.emit("turn.completed", reason=FinishReason.NO_TOOL_CALLS.value)
-                return LoopResult(
+                return self._finish(
+                    user_input,
                     answer=output.content,
                     finish_reason=FinishReason.NO_TOOL_CALLS,
                     messages=messages,
@@ -82,20 +83,38 @@ class AgentLoop:
                 )
 
             if self._stop_on_tool_error and any(not result.ok for result in tool_results):
-                self.events.emit("turn.completed", reason=FinishReason.TOOL_ERROR.value)
-                return LoopResult(
+                return self._finish(
+                    user_input,
                     answer=self._format_tool_errors(tool_results),
                     finish_reason=FinishReason.TOOL_ERROR,
                     messages=messages,
                     turns=turn_index + 1,
                 )
 
-        self.events.emit("turn.completed", reason=FinishReason.MAX_TURNS.value)
-        return LoopResult(
+        return self._finish(
+            user_input,
             answer=last_assistant_text,
             finish_reason=FinishReason.MAX_TURNS,
             messages=messages,
             turns=self._max_turns,
+        )
+
+    def _finish(
+        self,
+        user_input: str,
+        *,
+        answer: str,
+        finish_reason: FinishReason,
+        messages: list[Message],
+        turns: int,
+    ) -> LoopResult:
+        self._runtime.memory.finish_turn(user_input, answer)
+        self.events.emit("turn.completed", reason=finish_reason.value)
+        return LoopResult(
+            answer=answer,
+            finish_reason=finish_reason,
+            messages=messages,
+            turns=turns,
         )
 
     @staticmethod

@@ -4,6 +4,7 @@ from agent_framework import Agent, AgentLoop
 from agent_framework.core.model import ModelAdapter
 from agent_framework.core.types import FinishReason, Message, ModelOutput, ToolCall
 from agent_framework.memory.local import LocalMemoryStore
+from agent_framework.memory.base import MemoryStore
 from agent_framework.runtime import CapabilityConfig, ProviderRegistry, RuntimeBuilder, RuntimeConfig
 from agent_framework.tools.function import FunctionTool
 from agent_framework.tools.providers import StaticToolProvider
@@ -35,6 +36,24 @@ class UnknownToolModel(ModelAdapter):
 class ContextEchoModel(ModelAdapter):
     def generate(self, agent: Agent, messages: list[Message]) -> ModelOutput:
         return ModelOutput(content=messages[0].content, final=True)
+
+
+class SpyMemoryStore(MemoryStore):
+    def __init__(self) -> None:
+        self.started: list[str] = []
+        self.finished: list[tuple[str, str]] = []
+
+    def start_turn(self, user_input: str) -> None:
+        self.started.append(user_input)
+
+    def context_for(self, query: str) -> str:
+        return ""
+
+    def finish_turn(self, user_input: str, assistant_output: str) -> None:
+        self.finished.append((user_input, assistant_output))
+
+    def remember(self, key: str, value: str) -> None:
+        return None
 
 
 def test_final_answer_returns_immediately() -> None:
@@ -120,3 +139,52 @@ def test_runtime_tools_can_come_from_tool_provider() -> None:
     result = AgentLoop(runtime=runtime).run(agent, "add")
 
     assert result.answer == "answer: 3"
+
+
+def test_agent_loop_calls_memory_lifecycle_for_final_answer() -> None:
+    memory = SpyMemoryStore()
+    runtime = RuntimeBuilder(_registry_with_model("final", FinalModel())).build(
+        RuntimeConfig(model=CapabilityConfig("final"))
+    )
+    runtime.memory = memory
+    agent = Agent(name="agent", instructions="test")
+
+    result = AgentLoop(runtime=runtime).run(agent, "hello")
+
+    assert result.finish_reason == FinishReason.FINAL
+    assert memory.started == ["hello"]
+    assert memory.finished == [("hello", "done")]
+
+
+def test_agent_loop_calls_memory_lifecycle_for_tool_error() -> None:
+    memory = SpyMemoryStore()
+    runtime = RuntimeBuilder(_registry_with_model("unknown", UnknownToolModel())).build(
+        RuntimeConfig(model=CapabilityConfig("unknown"))
+    )
+    runtime.memory = memory
+    agent = Agent(name="agent", instructions="test")
+
+    result = AgentLoop(runtime=runtime, stop_on_tool_error=True).run(agent, "call")
+
+    assert result.finish_reason == FinishReason.TOOL_ERROR
+    assert memory.finished == [("call", "Tool not found: missing")]
+
+
+def test_agent_loop_calls_memory_lifecycle_for_max_turns() -> None:
+    memory = SpyMemoryStore()
+    runtime = RuntimeBuilder(_registry_with_model("unknown", UnknownToolModel())).build(
+        RuntimeConfig(model=CapabilityConfig("unknown"))
+    )
+    runtime.memory = memory
+    agent = Agent(name="agent", instructions="test")
+
+    result = AgentLoop(runtime=runtime, max_turns=2).run(agent, "call")
+
+    assert result.finish_reason == FinishReason.MAX_TURNS
+    assert memory.finished == [("call", "calling missing tool")]
+
+
+def _registry_with_model(name: str, model: ModelAdapter) -> ProviderRegistry:
+    registry = ProviderRegistry()
+    registry.register("model", name, lambda options: model)
+    return registry

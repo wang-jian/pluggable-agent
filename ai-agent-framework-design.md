@@ -235,6 +235,19 @@ Memory 分四类，不要混在一起：
 | `ProjectMemory` | 当前 workspace | 技术栈、测试命令、代码结构、约定 |
 | `UserMemory` | 跨项目 | 用户偏好、常用语言、沟通风格 |
 
+Memory provider 可以实现会话生命周期钩子，用于把 agent turn 同步给外部记忆系统：
+
+```ts
+interface MemoryStore {
+  start_turn(userInput: string): void
+  context_for(query: string): string
+  finish_turn(userInput: string, assistantOutput: string): void
+  remember(key: string, value: string): void
+}
+```
+
+例如 `memory:openviking` provider 使用 OpenViking session 管理会话：run 开始时写入 user message，`context_for()` 通过 `client.search(query, session=session)` 做上下文感知召回，run 完成时写入 assistant message，`remember()` 写入记忆消息后 commit，由 OpenViking 抽取长期记忆。
+
 写入 memory 要经过判断：
 
 1. 用户明确要求记住。
