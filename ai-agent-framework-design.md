@@ -206,6 +206,7 @@ Sandbox 不只是“能不能运行命令”，而是执行权限模型：
 3. `FileTool`：读写文件、列目录、搜索文本。
 4. `ProcessTool`：长进程、PTY、stdin/stdout 流。
 5. `WebSearchTool` / `WebFetchTool`：搜索和抓取网页，默认应被 sandbox / permission policy 视为网络能力。
+6. `ScriptTool`：通过 manifest 暴露用户自定义工具；本地脚本使用 JSON stdin/stdout，URL 工具作为 HTTP endpoint 调用。
 
 ### 4.3 Approval
 

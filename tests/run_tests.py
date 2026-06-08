@@ -22,6 +22,13 @@ from test_openviking_memory import (  # noqa: E402
     test_openviking_import_error_is_clear,
     test_openviking_remember_commits_by_default,
 )
+from test_script_tools import (  # noqa: E402
+    test_http_script_tool_posts_json_and_reads_response,
+    test_local_script_tool_reports_errors,
+    test_local_script_tool_uses_json_stdin_stdout,
+    test_script_tool_provider_loads_manifest_specs,
+    test_script_tools_provider_can_be_registered,
+)
 from test_web_tools import (  # noqa: E402
     test_web_fetch_tool_calls_client,
     test_web_search_tool_calls_client_and_formats_results,
@@ -45,6 +52,11 @@ def main() -> None:
         test_openviking_finish_turn_writes_assistant_message,
         test_openviking_remember_commits_by_default,
         test_openviking_import_error_is_clear,
+        test_script_tool_provider_loads_manifest_specs,
+        test_local_script_tool_uses_json_stdin_stdout,
+        test_http_script_tool_posts_json_and_reads_response,
+        test_local_script_tool_reports_errors,
+        test_script_tools_provider_can_be_registered,
         test_web_search_tool_calls_client_and_formats_results,
         test_web_fetch_tool_calls_client,
         test_web_tools_report_network_errors,

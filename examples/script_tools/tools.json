@@ -1,0 +1,22 @@
+{
+  "tools": [
+    {
+      "name": "echo_text",
+      "description": "Echo text from a user-provided script.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string"
+          }
+        },
+        "required": ["text"]
+      },
+      "source": {
+        "type": "local",
+        "command": ["python3", "echo_tool.py"],
+        "timeout": 10
+      }
+    }
+  ]
+}
